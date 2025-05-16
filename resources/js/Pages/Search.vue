@@ -6,10 +6,10 @@
           🍜 {{ $t('title') }}
         </h1>
         <div class="flex gap-2">
-          <button @click="toggleLanguage" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">
+          <button @click="toggleLanguage" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">
             {{ locale === 'en' ? 'EN' : 'TH' }}
           </button>
-          <button @click="toggleDarkMode" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">
+          <button @click="toggleDarkMode" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">
             {{ isDark ? '🌙 Dark' : '☀️ Light' }}
           </button>
         </div>
@@ -31,12 +31,14 @@
         </button>
       </div>
 
-      <div
-        id="map"
-        class="w-full h-80 rounded-lg border shadow-sm mb-6"
-      ></div>
+      <div id="map" class="w-full h-80 rounded-lg border shadow-sm mb-6"></div>
 
-      <div v-if="loading" class="text-center text-gray-500 dark:text-gray-400">Loading...</div>
+      <div v-if="loading" class="text-center my-6">
+        <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+        </svg>
+      </div>
 
       <div v-if="results.length" class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div
@@ -60,22 +62,18 @@ import { useI18n } from 'vue-i18n'
 const keyword = ref('Bang Sue')
 const results = ref([])
 const loading = ref(false)
-
 const { locale } = useI18n()
+
 const toggleLanguage = () => {
   locale.value = locale.value === 'en' ? 'th' : 'en'
 }
 
 const isDark = ref(localStorage.theme === 'dark' || window.matchMedia('(prefers-color-scheme: dark)').matches)
+
 const toggleDarkMode = () => {
   isDark.value = !isDark.value
-  if (isDark.value) {
-    document.documentElement.classList.add('dark')
-    localStorage.theme = 'dark'
-  } else {
-    document.documentElement.classList.remove('dark')
-    localStorage.theme = 'light'
-  }
+  document.documentElement.classList.toggle('dark', isDark.value)
+  localStorage.theme = isDark.value ? 'dark' : 'light'
 }
 
 let map
