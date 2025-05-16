@@ -1,10 +1,9 @@
 <template>
   <div class="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4 text-gray-800 dark:text-gray-100 transition">
     <div class="max-w-5xl mx-auto">
+      <!-- Header -->
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold flex items-center gap-2">
-          🍜 {{ $t('title') }}
-        </h1>
+        <h1 class="text-3xl font-bold flex items-center gap-2">🍜 {{ $t('title') }}</h1>
         <div class="flex gap-2">
           <button @click="toggleLanguage" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">
             {{ locale === 'en' ? 'EN' : 'TH' }}
@@ -15,6 +14,7 @@
         </div>
       </div>
 
+      <!-- Search Bar -->
       <div class="flex flex-col sm:flex-row gap-4 mb-6">
         <input
           v-model="keyword"
@@ -23,16 +23,15 @@
           :placeholder="$t('placeholder')"
           class="flex-1 p-3 rounded-md border border-gray-300 dark:border-gray-700 shadow focus:outline-none focus:ring focus:ring-blue-300 dark:bg-gray-800"
         />
-        <button
-          @click="search"
-          class="bg-blue-600 text-white px-5 py-3 rounded-md hover:bg-blue-700 transition"
-        >
+        <button @click="search" class="bg-blue-600 text-white px-5 py-3 rounded-md hover:bg-blue-700 transition">
           {{ $t('search') }}
         </button>
       </div>
 
+      <!-- Map -->
       <div id="map" class="w-full h-80 rounded-lg border shadow-sm mb-6"></div>
 
+      <!-- Loading Spinner -->
       <div v-if="loading" class="text-center my-6">
         <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -40,14 +39,20 @@
         </svg>
       </div>
 
+      <!-- Restaurant Cards -->
       <div v-if="results.length" class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div
           v-for="place in results"
           :key="place.place_id"
-          class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow hover:shadow-md transition border dark:border-gray-700"
+          @mouseenter="highlightPlace(place)"
+          @click="focusPlace(place)"
+          class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow hover:scale-[1.02] hover:shadow-lg transition-all border dark:border-gray-700 cursor-pointer transform"
         >
           <h2 class="text-lg font-semibold mb-1">{{ place.name }}</h2>
           <p class="text-sm text-gray-600 dark:text-gray-400">{{ place.formatted_address }}</p>
+          <p class="text-sm mt-1">
+            ⭐ {{ place.rating ?? 'N/A' }} ({{ place.user_ratings_total ?? 0 }} reviews)
+          </p>
         </div>
       </div>
     </div>
@@ -62,14 +67,13 @@ import { useI18n } from 'vue-i18n'
 const keyword = ref('Bang Sue')
 const results = ref([])
 const loading = ref(false)
-const { locale } = useI18n()
 
+const { locale } = useI18n()
 const toggleLanguage = () => {
   locale.value = locale.value === 'en' ? 'th' : 'en'
 }
 
 const isDark = ref(localStorage.theme === 'dark' || window.matchMedia('(prefers-color-scheme: dark)').matches)
-
 const toggleDarkMode = () => {
   isDark.value = !isDark.value
   document.documentElement.classList.toggle('dark', isDark.value)
@@ -110,6 +114,16 @@ const addMarkers = (places) => {
   }
 }
 
+const highlightPlace = (place) => {
+  map.panTo(place.geometry.location)
+  map.setZoom(15)
+}
+
+const focusPlace = (place) => {
+  map.panTo(place.geometry.location)
+  map.setZoom(17)
+}
+
 const search = async () => {
   loading.value = true
   try {
@@ -124,9 +138,7 @@ const search = async () => {
 }
 
 onMounted(() => {
-  if (isDark.value) {
-    document.documentElement.classList.add('dark')
-  }
+  if (isDark.value) document.documentElement.classList.add('dark')
   initMap()
   search()
 })

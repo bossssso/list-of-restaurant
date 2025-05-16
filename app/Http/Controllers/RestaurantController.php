@@ -12,32 +12,35 @@ class RestaurantController extends Controller
     {
         $keyword = $request->input('keyword', 'Bang Sue');
         $cacheKey = 'restaurants_' . md5($keyword);
+        $locale = app()->getLocale();
+        $apiKey = env('GOOGLE_API_KEY');
 
-        $data = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($keyword) {
-            $apiKey = env('GOOGLE_API_KEY');
+        $data = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($keyword, $apiKey, $locale) {
             $response = Http::get('https://maps.googleapis.com/maps/api/place/textsearch/json', [
                 'query' => $keyword . ' restaurants',
                 'key' => $apiKey,
-                'language' => app()->getLocale()
+                'language' => $locale
             ]);
-            return $response->json();
+
+            $places = $response->json()['results'] ?? [];
+
+            return collect($places)->map(function ($item) {
+                return [
+                    'name' => $item['name'] ?? '',
+                    'formatted_address' => $item['formatted_address'] ?? '',
+                    'place_id' => $item['place_id'] ?? '',
+                    'rating' => $item['rating'] ?? null,
+                    'user_ratings_total' => $item['user_ratings_total'] ?? null,
+                    'geometry' => [
+                        'location' => [
+                            'lat' => $item['geometry']['location']['lat'] ?? null,
+                            'lng' => $item['geometry']['location']['lng'] ?? null,
+                        ],
+                    ],
+                ];
+            });
         });
 
-        // ดัดแปลงข้อมูลให้ frontend ใช้ lat/lng ได้
-        $data['results'] = collect($data['results'])->map(function ($item) {
-            return [
-                'name' => $item['name'] ?? '',
-                'formatted_address' => $item['formatted_address'] ?? '',
-                'place_id' => $item['place_id'] ?? '',
-                'geometry' => [
-                    'location' => [
-                        'lat' => $item['geometry']['location']['lat'],
-                        'lng' => $item['geometry']['location']['lng'],
-                    ]
-                ]
-            ];
-        });
-
-        return response()->json($data);
+        return response()->json(['results' => $data]);
     }
 }
